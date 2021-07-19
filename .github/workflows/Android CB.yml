@@ -2,6 +2,7 @@ name: Android Continuous Build and Test
 
 on:
   pull_request:
+  workflow_dispatch:
   push:
       branches:
         - master
