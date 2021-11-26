@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 
 enum EndpointRoute {
   BASE_URL,
+  GET_HOME,
   LOGIN_WITH_FACEBOOK,
+  LOGIN_WITH_GOOGLE,
   CONNECT_FACEBOOK,
   REGISTER_WITH_EMAIL_V2,
   LOGIN_WITH_EMAIL,
@@ -15,8 +17,13 @@ enum EndpointRoute {
   GET_USER_BY_ID,
   GET_USER_BY_USERNAME,
   GET_USER_BY_FACEBOOK_USER_ID,
+  GET_PUBLICLY_AVAILABLE_USERS,
+  DELETE_FROM_PUBLICLY_AVAILABLE_USERS,
+  ADD_TO_PUBLICLY_AVAILABLE_MALES,
+  ADD_TO_PUBLICLY_AVAILABLE_FEMALES,
   SET_NOTIFICATIONS_TOKEN,
-  ADD_FRIEND_BY_USERNAME,
+  ADD_FRIEND,
+  DELETE_FRIEND,
   GET_FRIENDS,
   GET_FRIENDS_LEADERBOARD,
   ACCEPT_FRIEND,
@@ -28,7 +35,10 @@ enum EndpointRoute {
   ADD_GROUP_CHALLENGE,
   ADD_AZKAR_CHALLENGE,
   ADD_MEANING_CHALLENGE,
+  ADD_READING_QURAN_CHALLENGE,
+  ADD_MEMORIZATION_CHALLENGE,
   FINISH_MEANING_CHALLENGE,
+  FINISH_READING_QURAN_CHALLENGE,
   ADD_PERSONAL_CHALLENGE,
   GET_ALL_CHALLENGES,
   GET_ALL_CHALLENGES_IN_GROUP,
@@ -37,8 +47,10 @@ enum EndpointRoute {
   DELETE_PERSONAL_CHALLENGE,
   GET_ORIGINAL_CHALLENGE,
   UPDATE_AZKAR_CHALLENGE,
+  FINISH_MEMORIZATION_CHALLENGE_QUESTION,
   UPDATE_PERSONAL_CHALLENGE,
   GET_PERSONAL_CHALLENGES,
+  GET_FINISHED_CHALLENGES_COUNT,
 }
 
 class Endpoint {
@@ -67,8 +79,12 @@ class ApiRoutesUtil {
         }
         assert(false);
         break;
+      case EndpointRoute.GET_HOME:
+        return '/apiHome';
       case EndpointRoute.LOGIN_WITH_FACEBOOK:
         return '/login/facebook';
+      case EndpointRoute.LOGIN_WITH_GOOGLE:
+        return '/login/google';
       case EndpointRoute.CONNECT_FACEBOOK:
         return '/connect/facebook';
       case EndpointRoute.REGISTER_WITH_EMAIL_V2:
@@ -80,7 +96,7 @@ class ApiRoutesUtil {
       case EndpointRoute.GET_CATEGORIES:
         return '/categories';
       case EndpointRoute.GET_CURRENT_USER_PROFILE:
-        return 'users/me';
+        return 'users/me/v2';
       case EndpointRoute.GET_SABEQ:
         return 'users/sabeq';
       case EndpointRoute.GET_USER_BY_ID:
@@ -94,15 +110,28 @@ class ApiRoutesUtil {
         assert(route.requestParams.length == 1);
         assert(route.requestParams.keys.first == 'facebook_user_id');
         return '/users/search';
+      case EndpointRoute.GET_PUBLICLY_AVAILABLE_USERS:
+        return '/users/publicly_available_users';
+      case EndpointRoute.ADD_TO_PUBLICLY_AVAILABLE_MALES:
+        return '/users/publicly_available_males';
+      case EndpointRoute.ADD_TO_PUBLICLY_AVAILABLE_FEMALES:
+        return '/users/publicly_available_females';
+      case EndpointRoute.GET_PUBLICLY_AVAILABLE_USERS:
+        return '/users/publicly_available_users';
+      case EndpointRoute.DELETE_FROM_PUBLICLY_AVAILABLE_USERS:
+        return '/users/publicly_available_users';
       case EndpointRoute.SET_NOTIFICATIONS_TOKEN:
         return '/users/notifications/token';
-      case EndpointRoute.ADD_FRIEND_BY_USERNAME:
+      case EndpointRoute.ADD_FRIEND:
+        assert(route.pathVariables.length == 1);
+        return '/friends/${route.pathVariables[0]}';
+      case EndpointRoute.DELETE_FRIEND:
         assert(route.pathVariables.length == 1);
         return '/friends/${route.pathVariables[0]}';
       case EndpointRoute.GET_FRIENDS:
         return '/friends';
       case EndpointRoute.GET_FRIENDS_LEADERBOARD:
-        return '/friends/leaderboard';
+        return '/friends/leaderboard/v2';
       case EndpointRoute.ACCEPT_FRIEND:
         assert(route.pathVariables.length == 1);
         return '/friends/${route.pathVariables[0]}/accept';
@@ -125,9 +154,16 @@ class ApiRoutesUtil {
         return '/challenges/friends';
       case EndpointRoute.ADD_MEANING_CHALLENGE:
         return '/challenges/meaning';
+      case EndpointRoute.ADD_READING_QURAN_CHALLENGE:
+        return '/challenges/reading_quran';
+      case EndpointRoute.ADD_MEMORIZATION_CHALLENGE:
+        return '/challenges/memorization';
       case EndpointRoute.FINISH_MEANING_CHALLENGE:
         assert(route.pathVariables.length == 1);
         return '/challenges/finish/meaning/${route.pathVariables[0]}/';
+      case EndpointRoute.FINISH_READING_QURAN_CHALLENGE:
+        assert(route.pathVariables.length == 1);
+        return '/challenges/finish/reading_quran/${route.pathVariables[0]}/';
       case EndpointRoute.ADD_PERSONAL_CHALLENGE:
         return '/challenges/personal';
       case EndpointRoute.GET_ALL_CHALLENGES:
@@ -150,11 +186,16 @@ class ApiRoutesUtil {
       case EndpointRoute.UPDATE_AZKAR_CHALLENGE:
         assert(route.pathVariables.length == 1);
         return '/challenges/${route.pathVariables[0]}';
+      case EndpointRoute.FINISH_MEMORIZATION_CHALLENGE_QUESTION:
+        assert(route.pathVariables.length == 2);
+        return '/challenges/finish/memorization/${route.pathVariables[0]}/${route.pathVariables[1]}';
       case EndpointRoute.UPDATE_PERSONAL_CHALLENGE:
         assert(route.pathVariables.length == 1);
         return '/challenges/personal/${route.pathVariables[0]}';
       case EndpointRoute.GET_PERSONAL_CHALLENGES:
         return '/challenges/personal';
+      case EndpointRoute.GET_FINISHED_CHALLENGES_COUNT:
+        return '/challenges/finished-challenges-count';
       default:
         print('Route enum is not registered.');
     }

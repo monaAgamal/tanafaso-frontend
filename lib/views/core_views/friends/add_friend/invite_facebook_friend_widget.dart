@@ -1,6 +1,6 @@
 import 'package:azkar/models/user.dart';
 import 'package:azkar/net/api_exception.dart';
-import 'package:azkar/net/services/service_provider.dart';
+import 'package:azkar/services/service_provider.dart';
 import 'package:azkar/utils/app_localizations.dart';
 import 'package:azkar/utils/snack_bar_utils.dart';
 import 'package:flutter/material.dart';
@@ -65,12 +65,13 @@ class _InviteFacebookFriendWidgetState
   void onInvitePressed() async {
     try {
       await ServiceProvider.usersService
-          .addFriend(widget.facebookFriend.username);
+          .addFriendWithUsername(widget.facebookFriend.username);
     } on ApiException catch (e) {
       SnackBarUtils.showSnackBar(
         context,
-        '${AppLocalizations.of(context).error}: ${e.error}',
+        '${AppLocalizations.of(context).error}: ${e.errorStatus.errorMessage}',
       );
+      return;
     }
 
     SnackBarUtils.showSnackBar(

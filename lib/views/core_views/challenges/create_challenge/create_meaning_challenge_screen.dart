@@ -1,11 +1,13 @@
+import 'package:auto_size_text/auto_size_text.dart';
 import 'package:azkar/models/friend.dart';
 import 'package:azkar/net/api_exception.dart';
 import 'package:azkar/net/api_interface/challenges/requests/add_meaning_challenge_request_body.dart';
-import 'package:azkar/net/services/service_provider.dart';
+import 'package:azkar/services/service_provider.dart';
 import 'package:azkar/utils/app_localizations.dart';
 import 'package:azkar/utils/arabic_utils.dart';
 import 'package:azkar/utils/snack_bar_utils.dart';
 import 'package:azkar/views/core_views/challenges/create_challenge/select_friend/selected_friends_widget.dart';
+import 'package:azkar/views/core_views/home_page.dart';
 import 'package:flutter/material.dart';
 import 'package:progress_state_button/iconed_button.dart';
 import 'package:progress_state_button/progress_button.dart';
@@ -44,7 +46,10 @@ class _CreateMeaningChallengeScreenState
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(AppLocalizations.of(context).createAChallenge),
+        title: AutoSizeText(
+          "معاني كلمات القرآن",
+          style: TextStyle(fontSize: 30),
+        ),
       ),
       body: GestureDetector(
         behavior: HitTestBehavior.opaque,
@@ -87,7 +92,7 @@ class _CreateMeaningChallengeScreenState
                                     child: Text(
                                       '*',
                                       style: TextStyle(
-                                          color: Colors.red, fontSize: 17),
+                                          color: Colors.red, fontSize: 25),
                                     ),
                                   ),
                                   Padding(
@@ -98,7 +103,7 @@ class _CreateMeaningChallengeScreenState
                                     "عدد الكلمات",
                                     style: TextStyle(
                                         fontWeight: FontWeight.bold,
-                                        fontSize: 17),
+                                        fontSize: 25),
                                   ),
                                 ],
                               ),
@@ -107,36 +112,48 @@ class _CreateMeaningChallengeScreenState
                                 child: Row(
                                   mainAxisAlignment: MainAxisAlignment.start,
                                   children: [
-                                    RichText(
-                                        text: TextSpan(
-                                      // Note: Styles for TextSpans must be explicitly defined.
-                                      // Child text spans will inherit styles from parent
-                                      style: new TextStyle(
-                                        color: Colors.black,
+                                    Flexible(
+                                      child: FittedBox(
+                                        fit: BoxFit.scaleDown,
+                                        child: Padding(
+                                          padding: const EdgeInsets.all(8.0),
+                                          child: RichText(
+                                              maxLines: 1,
+                                              text: TextSpan(
+                                                // Note: Styles for TextSpans must be explicitly defined.
+                                                // Child text spans will inherit styles from parent
+                                                style: new TextStyle(
+                                                    color: Colors.black,
+                                                    fontSize: 20),
+                                                children: <TextSpan>[
+                                                  new TextSpan(
+                                                    text: 'سيتكون التحدي من',
+                                                  ),
+                                                  new TextSpan(
+                                                      text:
+                                                          '  ${ArabicUtils.englishToArabic(_numberOfWords.toString())}  ',
+                                                      style: TextStyle(
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                        fontSize: 25,
+                                                      )),
+                                                  new TextSpan(
+                                                    text: 'كلمات ومعانيها.',
+                                                  ),
+                                                ],
+                                              )),
+                                        ),
                                       ),
-                                      children: <TextSpan>[
-                                        new TextSpan(
-                                          text: 'سيتكون التحدي من',
-                                        ),
-                                        new TextSpan(
-                                            text:
-                                                '  ${ArabicUtils.englishToArabic(_numberOfWords.toString())}  ',
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 20,
-                                            )),
-                                        new TextSpan(
-                                          text: 'كلمات ومعانيها.',
-                                        ),
-                                      ],
-                                    )),
+                                    ),
                                   ],
                                 ),
                               ),
                               Slider(
                                 value: _numberOfWords.toDouble(),
-                                activeColor: Theme.of(context).primaryColor,
-                                inactiveColor: Theme.of(context).primaryColor,
+                                activeColor:
+                                    Theme.of(context).colorScheme.primary,
+                                inactiveColor:
+                                    Theme.of(context).colorScheme.primary,
                                 min: 3,
                                 max: 9,
                                 divisions: 8,
@@ -168,7 +185,7 @@ class _CreateMeaningChallengeScreenState
                                     AppLocalizations.of(context).deadline,
                                     style: TextStyle(
                                         fontWeight: FontWeight.bold,
-                                        fontSize: 17),
+                                        fontSize: 25),
                                   ),
                                 ],
                               ),
@@ -177,36 +194,44 @@ class _CreateMeaningChallengeScreenState
                                 child: Row(
                                   mainAxisAlignment: MainAxisAlignment.start,
                                   children: [
-                                    RichText(
-                                        text: TextSpan(
-                                      // Note: Styles for TextSpans must be explicitly defined.
-                                      // Child text spans will inherit styles from parent
-                                      style: new TextStyle(
-                                        color: Colors.black,
-                                      ),
-                                      children: <TextSpan>[
-                                        new TextSpan(
-                                          text: 'التحدي ينتهي بعد',
-                                        ),
-                                        new TextSpan(
-                                            text:
-                                                '  ${ArabicUtils.englishToArabic(_expiresAfterHoursNum.toString())}  ',
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 20,
+                                    Flexible(
+                                      child: FittedBox(
+                                        child: RichText(
+                                            maxLines: 1,
+                                            text: TextSpan(
+                                              // Note: Styles for TextSpans must be explicitly defined.
+                                              // Child text spans will inherit styles from parent
+                                              style: new TextStyle(
+                                                  color: Colors.black,
+                                                  fontSize: 20),
+                                              children: <TextSpan>[
+                                                new TextSpan(
+                                                  text: 'التحدي ينتهي بعد',
+                                                ),
+                                                new TextSpan(
+                                                    text:
+                                                        '  ${ArabicUtils.englishToArabic(_expiresAfterHoursNum.toString())}  ',
+                                                    style: TextStyle(
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      fontSize: 25,
+                                                    )),
+                                                new TextSpan(
+                                                  text: 'ساعات.',
+                                                ),
+                                              ],
                                             )),
-                                        new TextSpan(
-                                          text: 'ساعات.',
-                                        ),
-                                      ],
-                                    )),
+                                      ),
+                                    ),
                                   ],
                                 ),
                               ),
                               Slider(
                                 value: _expiresAfterHoursNum.toDouble(),
-                                activeColor: Theme.of(context).primaryColor,
-                                inactiveColor: Theme.of(context).primaryColor,
+                                activeColor:
+                                    Theme.of(context).colorScheme.primary,
+                                inactiveColor:
+                                    Theme.of(context).colorScheme.primary,
                                 min: 1,
                                 max: 24,
                                 divisions: 24,
@@ -342,7 +367,7 @@ class _CreateMeaningChallengeScreenState
     } on ApiException catch (e) {
       SnackBarUtils.showSnackBar(
         context,
-        e.error,
+        e.errorStatus.errorMessage,
       );
       setState(() {
         progressButtonState = ButtonState.fail;
@@ -359,7 +384,13 @@ class _CreateMeaningChallengeScreenState
       AppLocalizations.of(context).challengeHasBeenAddedSuccessfully,
       color: Colors.green.shade400,
     );
-    Navigator.of(context).pop();
+
+    Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(
+            builder: (_) => HomePage(
+                  initiallySelectedTopicType: TopicType.CHALLENGES,
+                )),
+        (_) => false);
   }
 
   bool readyToFinishChallenge(bool showWarnings) {

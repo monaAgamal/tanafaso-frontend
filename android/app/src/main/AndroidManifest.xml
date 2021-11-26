@@ -7,7 +7,7 @@
        FlutterApplication and put your custom class here. -->
   <uses-permission android:name="android.permission.INTERNET"/>
   <application
-    android:icon="@mipmap/tanafaso"
+    android:icon="@mipmap/ic_launcher"
     android:label="تنافسوا"
     android:name="io.flutter.app.FlutterApplication">
     <activity
@@ -48,7 +48,7 @@
 
     <meta-data
         android:name="com.google.firebase.messaging.default_notification_icon"
-        android:resource="@mipmap/test" />
+        android:resource="@mipmap/notification" />
     <meta-data
       android:name="com.facebook.sdk.ApplicationId"
       android:value="@string/facebook_app_id" />

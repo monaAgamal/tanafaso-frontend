@@ -50,12 +50,24 @@ class Status {
   static const int API_NAME_EMPTY_ERROR = 44;
   static const int API_PASSWORD_CHARACTERS_LESS_THAN_8_ERROR = 45;
   static const int CHALLENGE_CREATION_DUPLICATE_ZEKR_ERROR = 46;
+
   // static const int INVALID_RESET_PASSWORD_TOKEN_ERROR = 47;
   static const int ONE_OR_MORE_USERS_NOT_FRIENDS_ERROR = 48;
   static const int LESS_THAN_TWO_FRIENDS_ARE_PROVIDED_ERROR = 49;
   static const int DUPLICATE_FRIEND_IDS_PROVIDED_ERROR = 50;
   static const int CHALLENGE_HAS_ALREADY_BEEN_FINISHED = 51;
   static const int TAFSEER_CHALLENGE_INCORRECT_NUMBER_OF_WORDS_ERROR = 52;
+  static const int CANNOT_REMOVE_SABEQ__FROM_FRIENDS_ERROR = 53;
+  static const int STARTING_VERSE_AFTER_ENDING_VERSE_ERROR = 54;
+  static const int USER_NOT_ADDED_TO_PUBLICLY_AVAILABLE_USERS_ERROR = 55;
+  static const int USER_ALREADY_IS_PUBLICLY_AVAILABLE_USER_ERROR = 56;
+  static const int FACEBOOK_RETURNED_NULL_EMAIL_ADDRESS_ERROR = 57;
+  static const int AUTHENTICATION_WITH_GOOGLE_ERROR = 58;
+  static const int MEMORIZATION_CHALLENGE_DIFFICULTY_LEVEL_INVALID_ERROR = 59;
+  static const int MEMORIZATION_CHALLENGE_JUZ_RANGE_INVALID_ERROR = 60;
+  static const int MEMORIZATION_CHALLENGE_NUMBER_OF_QUESTIONS_INVALID_ERROR =
+      61;
+  static const int MEMORIZATION_QUESTION_HAS_ALREADY_BEEN_FINISHED = 62;
 
   static Map<int, String> conversions = const {
     API_USER_ALREADY_LOGGED_IN_ERROR: "لقد قمت بتسجيل الدخول بالفعل",
@@ -123,6 +135,24 @@ class Status {
     CHALLENGE_HAS_ALREADY_BEEN_FINISHED: "تم الانتهاء من التحدي بالفعل من قبل",
     TAFSEER_CHALLENGE_INCORRECT_NUMBER_OF_WORDS_ERROR:
         "عدد الكلمات المختارة غير صحيح",
+    CANNOT_REMOVE_SABEQ__FROM_FRIENDS_ERROR: "لا يمكن إزالة سابق من الأصدقاء",
+    STARTING_VERSE_AFTER_ENDING_VERSE_ERROR:
+        "لا يمكن أن يكون رقم آية البداية أكبر من رقم آية النهاية",
+    USER_NOT_ADDED_TO_PUBLICLY_AVAILABLE_USERS_ERROR:
+        "يجب أن توافق أولاً على إضافتك إلى القائمة التي يراها الآخرون",
+    USER_ALREADY_IS_PUBLICLY_AVAILABLE_USER_ERROR:
+        "تمت إضافتك بالفعل إلى القائمة التي يراها الآخرون",
+    FACEBOOK_RETURNED_NULL_EMAIL_ADDRESS_ERROR:
+        "فيسبوك لم يرسل عنوان بريدك الإلكتروني إلى تنافسوا، على الأرجح لأن فيسبوك لم  يتحقق من بريدك الإلكتروني بعد. إما أن تأكد بريدك الإلكتروني باستخدام مع فيسبوك أولاً أو حاول تسجيل الدخول باستخدام بريدك الإلكتروني مباشرةً.",
+    AUTHENTICATION_WITH_GOOGLE_ERROR:
+        'حدث خطأ أثناء محاولة تسجيل الدخول باستخدام جوجل',
+    MEMORIZATION_CHALLENGE_DIFFICULTY_LEVEL_INVALID_ERROR:
+        'مستوى صعوبة غير صالح',
+    MEMORIZATION_CHALLENGE_JUZ_RANGE_INVALID_ERROR: 'أرقام أجزاء غير صالحة',
+    MEMORIZATION_CHALLENGE_NUMBER_OF_QUESTIONS_INVALID_ERROR:
+        'عدد غير صالح من الأسئلة',
+    MEMORIZATION_QUESTION_HAS_ALREADY_BEEN_FINISHED:
+        'لقد أجبت على هذا السؤال من قبل',
   };
 
   Status(int errorCode) {

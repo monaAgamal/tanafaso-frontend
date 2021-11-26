@@ -1,23 +1,27 @@
+import 'package:auto_size_text/auto_size_text.dart';
 import 'package:azkar/models/azkar_challenge.dart';
 import 'package:azkar/models/challenge.dart';
 import 'package:azkar/models/friend.dart';
-import 'package:azkar/models/friendship.dart';
-import 'package:azkar/models/friendship_scores.dart';
 import 'package:azkar/models/group.dart';
 import 'package:azkar/net/api_exception.dart';
-import 'package:azkar/net/services/service_provider.dart';
+import 'package:azkar/services/service_provider.dart';
 import 'package:azkar/utils/app_localizations.dart';
 import 'package:azkar/utils/arabic_utils.dart';
 import 'package:azkar/utils/features.dart';
 import 'package:azkar/utils/snack_bar_utils.dart';
 import 'package:azkar/utils/snapshot_utils.dart';
+import 'package:azkar/views/core_views/challenges/all_challenges/challenge_list_item_loading_widget.dart';
 import 'package:azkar/views/core_views/challenges/create_challenge/create_azkar_challenge_screen.dart';
 import 'package:azkar/views/core_views/challenges/create_challenge/create_meaning_challenge_screen.dart';
-import 'package:azkar/views/core_views/challenges/do_challenge/do_azkar_challenge_screen.dart';
+import 'package:azkar/views/core_views/challenges/create_challenge/create_memorization_challenge_screen.dart';
+import 'package:azkar/views/core_views/challenges/create_challenge/create_quran_reading_challenge_screen.dart';
+import 'package:azkar/views/core_views/challenges/do_challenge/do_azkar_challenge/do_azkar_challenge_screen.dart';
 import 'package:azkar/views/core_views/challenges/do_challenge/do_meaning_challenge_screen.dart';
+import 'package:azkar/views/core_views/challenges/do_challenge/do_memorization_challenge/do_memorization_challenge_screen.dart';
+import 'package:azkar/views/core_views/challenges/do_challenge/do_reading_quran_challenge_screen.dart';
+import 'package:azkar/views/core_views/challenges/do_challenge/friends_progress_widget.dart';
 import 'package:feature_discovery/feature_discovery.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/scheduler.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 
 typedef ChallengeChangedCallback = void Function(AzkarChallenge newChallenge);
@@ -28,7 +32,7 @@ class ChallengeListItemWidget extends StatefulWidget {
   final bool showName;
   final ChallengeChangedCallback challengeChangedCallback;
   final bool firstChallengeInList;
-  final List<FriendshipScores> friendshipScores;
+  final List<Friend> friendshipScores;
 
   ChallengeListItemWidget({
     Key key,
@@ -71,25 +75,18 @@ class _ChallengeListItemWidgetState extends State<ChallengeListItemWidget>
       }
       _binary = _challengedUsersIds.length == 1;
     } on ApiException catch (e) {
-      SnackBarUtils.showSnackBar(context, e.error);
+      SnackBarUtils.showSnackBar(context, e.errorStatus.errorMessage);
     }
   }
 
+  Future<void> _neededData;
+
   @override
   void initState() {
-    super.initState();
-
+    _neededData = getNeededData();
     _deleted = false;
     _binary = true;
     _challengedUsersFullNames = [];
-    SchedulerBinding.instance.addPostFrameCallback((Duration duration) {
-      if (mounted) {
-        FeatureDiscovery.discoverFeatures(
-          context,
-          [Features.CLONE_AND_DELETE],
-        );
-      }
-    });
     _showCloneAndDeleteFeatureDiscovery = false;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Future.delayed(const Duration(milliseconds: 500), () async {
@@ -111,118 +108,104 @@ class _ChallengeListItemWidgetState extends State<ChallengeListItemWidget>
       parent: _controller,
       curve: Curves.elasticIn,
     ));
+
+    super.initState();
   }
 
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    return Visibility(
-      visible: !_deleted,
-      maintainSize: false,
-      maintainState: false,
-      child: FutureBuilder(
-          future: getNeededData(),
-          builder: (BuildContext context, AsyncSnapshot<void> snapshot) {
-            if (snapshot.connectionState == ConnectionState.done) {
-              return RawMaterialButton(
-                padding: EdgeInsets.all(4),
-                onPressed: () => onChallengePressed(),
-                elevation: 2.0,
-                fillColor: Colors.white,
-                child: !_showCloneAndDeleteFeatureDiscovery
-                    ? getMainWidget()
-                    : DescribedFeatureOverlay(
-                        featureId: Features.CLONE_AND_DELETE,
-                        overflowMode: OverflowMode.wrapBackground,
-                        contentLocation: ContentLocation.below,
-                        barrierDismissible: false,
-                        backgroundDismissible: false,
-                        tapTarget: SlideTransition(
-                            position: _offsetAnimation,
-                            child: Icon(Icons.double_arrow)),
-                        // The widget that will be displayed as the tap target.
-                        title: Center(
-                          child: Row(
+    return SafeArea(
+      child: Visibility(
+        visible: !_deleted,
+        maintainSize: false,
+        maintainState: false,
+        child: FutureBuilder(
+            future: _neededData,
+            builder: (BuildContext context, AsyncSnapshot<void> snapshot) {
+              if (snapshot.connectionState == ConnectionState.done) {
+                return RawMaterialButton(
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10)),
+                  padding: EdgeInsets.all(4),
+                  onPressed: () => onChallengePressed(),
+                  elevation: 3.0,
+                  fillColor: Colors.white,
+                  child: !_showCloneAndDeleteFeatureDiscovery
+                      ? getMainWidget()
+                      : DescribedFeatureOverlay(
+                          featureId: Features.CLONE_AND_DELETE,
+                          overflowMode: OverflowMode.wrapBackground,
+                          contentLocation: ContentLocation.below,
+                          barrierDismissible: false,
+                          backgroundDismissible: false,
+                          tapTarget: SlideTransition(
+                              position: _offsetAnimation,
+                              child: Icon(Icons.double_arrow)),
+                          // The widget that will be displayed as the tap target.
+                          title: Center(
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: FittedBox(
+                                    child: Text(
+                                        AppLocalizations.of(context)
+                                            .deleteAndCopyChallenge,
+                                        softWrap: true,
+                                        textAlign: TextAlign.center,
+                                        maxLines: 1,
+                                        style: TextStyle(
+                                          fontSize: 25,
+                                        )),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          description: Row(
                             children: [
                               Expanded(
-                                  child: Padding(
-                                padding: EdgeInsets.all(0),
-                              )),
-                              Text(
-                                AppLocalizations.of(context)
-                                    .deleteAndCopyChallenge,
-                                softWrap: true,
-                                textAlign: TextAlign.center,
+                                child: Text(
+                                    AppLocalizations.of(context)
+                                        .swipeTheChallengeCardToTheRightToDeleteOrCopyAChallenge,
+                                    softWrap: true,
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      fontSize: 20,
+                                    )),
                               ),
                             ],
                           ),
+                          backgroundColor:
+                              Theme.of(context).colorScheme.primary,
+                          targetColor: Colors.white,
+                          textColor: Colors.black,
+                          child: getMainWidget(),
                         ),
-                        description: Row(
-                          children: [
-                            Expanded(
-                                child: Padding(
-                              padding: EdgeInsets.all(0),
-                            )),
-                            Container(
-                              alignment: Alignment.centerRight,
-                              width: MediaQuery.of(context).size.width / 2,
-                              child: Text(
-                                AppLocalizations.of(context)
-                                    .swipeTheChallengeCardToTheRightToDeleteOrCopyAChallenge,
-                                softWrap: true,
-                                textAlign: TextAlign.center,
-                              ),
-                            ),
-                          ],
-                        ),
-                        backgroundColor: Theme.of(context).primaryColor,
-                        targetColor: Colors.white,
-                        textColor: Colors.black,
-                        child: getMainWidget(),
-                      ),
-              );
-            } else if (snapshot.hasError) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.error_outline,
-                      color: Colors.red,
-                      size: 60,
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.only(top: 16),
-                      child: SnapshotUtils.getErrorWidget(context, snapshot),
-                    )
-                  ],
-                ),
-              );
-            } else {
-              return Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(8.0),
+                );
+              } else if (snapshot.hasError) {
+                return Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.center,
-                    children: <Widget>[
-                      SizedBox(
-                        child: CircularProgressIndicator(),
-                        width: 60,
-                        height: 60,
+                    children: [
+                      Icon(
+                        Icons.error_outline,
+                        color: Colors.red,
+                        size: 60,
                       ),
                       Padding(
-                        padding: EdgeInsets.only(top: 16),
-                        child: Text(
-                            '${AppLocalizations.of(context).loadingTheChallenge}...'),
+                        padding: const EdgeInsets.only(top: 16),
+                        child: SnapshotUtils.getErrorWidget(context, snapshot),
                       )
                     ],
                   ),
-                ),
-              );
-            }
-          }),
+                );
+              } else {
+                return ChallengeListItemLoadingWidget();
+              }
+            }),
+      ),
     );
   }
 
@@ -258,7 +241,7 @@ class _ChallengeListItemWidgetState extends State<ChallengeListItemWidget>
                 } on ApiException catch (e) {
                   SnackBarUtils.showSnackBar(
                     context,
-                    '${AppLocalizations.of(context).error}: ${e.error}',
+                    '${AppLocalizations.of(context).error}: ${e.errorStatus.errorMessage}',
                   );
                   return;
                 }
@@ -271,103 +254,103 @@ class _ChallengeListItemWidgetState extends State<ChallengeListItemWidget>
           child: Card(
             margin: EdgeInsets.all(0),
             child: IconSlideAction(
-              caption: widget.challenge.challengeType == ChallengeType.AZKAR
-                  ? AppLocalizations.of(context).copy
-                  : "إضافة",
+              caption: getCopyCaption(),
               color: Colors.green.shade600,
-              icon: widget.challenge.challengeType == ChallengeType.AZKAR
-                  ? Icons.copy
-                  : Icons.add,
+              icon: getCopyIcon(),
               onTap: () => onCopyPressed(),
             ),
           ),
         ),
       ],
-      child: IntrinsicHeight(
-        child: Row(
-          children: [
-            Flexible(
-              child: Padding(
-                padding: const EdgeInsets.only(left: 8.0, right: 8.0),
-                child: getIconConditionally(),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Padding(padding: EdgeInsets.only(right: 8)),
+              getIcon(),
+              Padding(padding: EdgeInsets.only(right: 16)),
+              Expanded(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    widget.challenge.getName(),
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 40),
+                    maxLines: 1,
+                    textAlign: TextAlign.start,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
               ),
-            ),
-            VerticalDivider(
-              width: 3,
-              color: Colors.black,
-            ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Text(
-                        widget.challenge.getName(),
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 20),
-                      ),
-                    ),
-                  ],
-                ),
-                Visibility(
-                  visible: widget.challenge.challengeType ==
-                          ChallengeType.AZKAR &&
-                      (widget.challenge?.azkarChallenge?.motivation?.length ??
-                              0) !=
-                          0,
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
+              Padding(padding: EdgeInsets.only(right: 8)),
+            ],
+          ),
+          Row(
+            children: [
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.only(right: 8.0, top: 8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.start,
                     children: [
-                      Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Icon(Icons.directions_run),
+                      Row(
+                        children: [],
                       ),
-                      Container(
-                        width: MediaQuery.of(context).size.width * 2 / 3,
-                        child: Text(
-                          widget.challenge.azkarChallenge?.motivation ?? "",
-                          overflow: TextOverflow.ellipsis,
-                          softWrap: false,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Row(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Icon(Icons.alarm),
-                    ),
-                    getDeadlineText(context),
-                  ],
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Row(
-                    children: [
                       Visibility(
-                        visible: _binary,
-                        maintainSize: false,
-                        maintainState: false,
-                        child: Padding(
-                          padding: const EdgeInsets.only(left: 8.0),
-                          child: getFriendProgressOnChallengeIcon(),
+                        visible: widget.challenge.challengeType ==
+                                ChallengeType.AZKAR &&
+                            (widget.challenge?.azkarChallenge?.motivation
+                                        ?.length ??
+                                    0) !=
+                                0,
+                        child: Container(
+                          width: MediaQuery.of(context).size.width * 2 / 3,
+                          child: AutoSizeText(
+                            widget.challenge.azkarChallenge?.motivation ?? "",
+                            overflow: TextOverflow.ellipsis,
+                            softWrap: false,
+                            maxLines: 2,
+                            style: TextStyle(fontSize: 25),
+                            minFontSize: 25,
+                          ),
                         ),
                       ),
-                      Container(
-                        width: MediaQuery.of(context).size.width * 3 / 4,
-                        child: getFriendsNames(),
-                      ),
+                      getDeadlineText(context),
+                      // getFriendsNames(),
                     ],
                   ),
                 ),
-              ],
-            ),
-          ],
-        ),
+              ),
+              Padding(
+                padding: EdgeInsets.only(left: 16),
+              ),
+              GestureDetector(
+                onTap: () {
+                  showModalBottomSheet(
+                      context: context,
+                      builder: (_) {
+                        return FriendsProgressWidget(
+                          challenge: widget.challenge,
+                          challengedUsersIds: _challengedUsersIds,
+                          challengedUsersFullNames: _challengedUsersFullNames,
+                          fontSize: 40,
+                          iconSize: 45,
+                        );
+                      });
+                },
+                child: Icon(
+                  Icons.group_sharp,
+                  color: Colors.green,
+                  size: 45,
+                ),
+              ),
+              Padding(
+                padding: EdgeInsets.only(left: 8),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -378,8 +361,8 @@ class _ChallengeListItemWidgetState extends State<ChallengeListItemWidget>
       challenge = await ServiceProvider.challengesService
           .getAzkarChallenge(widget.challenge.getId());
     } on ApiException catch (e) {
-      SnackBarUtils.showSnackBar(
-          context, '${AppLocalizations.of(context).error}: ${e.error}');
+      SnackBarUtils.showSnackBar(context,
+          '${AppLocalizations.of(context).error}: ${e.errorStatus.errorMessage}');
     }
     Navigator.of(context).push(MaterialPageRoute(
         builder: (context) => DoAzkarChallengeScreen(
@@ -406,11 +389,48 @@ class _ChallengeListItemWidgetState extends State<ChallengeListItemWidget>
             })));
   }
 
+  void onReadingChallengePressed() {
+    Navigator.of(context).push(MaterialPageRoute(
+        builder: (context) => DoReadingQuranChallengeScreen(
+            challenge: widget.challenge.readingQuranChallenge,
+            group: widget.group,
+            challengedUsersIds: _challengedUsersIds,
+            challengedUsersFullNames: _challengedUsersFullNames,
+            friendshipScores: widget.friendshipScores,
+            challengeChangedCallback: (changedChallenge) {
+              widget.challengeChangedCallback(changedChallenge);
+            })));
+  }
+
+  void onMemorizationChallengePressed() {
+    Navigator.of(context).push(MaterialPageRoute(
+        builder: (context) => DoMemorizationChallengeScreen(
+            challenge: widget.challenge.memorizationChallenge,
+            group: widget.group,
+            challengedUsersIds: _challengedUsersIds,
+            challengedUsersFullNames: _challengedUsersFullNames,
+            friendshipScores: widget.friendshipScores,
+            challengeChangedCallback: (changedChallenge) {
+              widget.challengeChangedCallback(changedChallenge);
+            })));
+  }
+
   void onChallengePressed() {
-    if (widget.challenge.challengeType == ChallengeType.AZKAR) {
-      onAzkarChallengePressed();
-    } else {
-      onMeaningChallengePressed();
+    switch (widget.challenge.challengeType) {
+      case ChallengeType.AZKAR:
+        onAzkarChallengePressed();
+        return;
+      case ChallengeType.MEANING:
+        onMeaningChallengePressed();
+        return;
+      case ChallengeType.READING_QURAN:
+        onReadingChallengePressed();
+        return;
+      case ChallengeType.MEMORIZATION:
+        onMemorizationChallengePressed();
+        return;
+      case ChallengeType.OTHER:
+        return;
     }
   }
 
@@ -423,12 +443,13 @@ class _ChallengeListItemWidgetState extends State<ChallengeListItemWidget>
     } on ApiException catch (e) {
       SnackBarUtils.showSnackBar(
         context,
-        '${AppLocalizations.of(context).error}: ${e.error}',
+        '${AppLocalizations.of(context).error}: ${e.errorStatus.errorMessage}',
       );
       return;
     }
-    Friendship friends = await ServiceProvider.usersService.getFriends();
-    List<Friend> currentChallengeFriends = friends.friends
+    List<Friend> friends =
+        await ServiceProvider.usersService.getFriendsLeaderboard();
+    List<Friend> currentChallengeFriends = friends
         .where((friend) => _challengedUsersIds.contains(friend.userId))
         .toList();
     Navigator.push(
@@ -444,8 +465,9 @@ class _ChallengeListItemWidgetState extends State<ChallengeListItemWidget>
   }
 
   void onCopyMeaningChallenge() async {
-    Friendship friends = await ServiceProvider.usersService.getFriends();
-    List<Friend> currentChallengeFriends = friends.friends
+    List<Friend> friends =
+        await ServiceProvider.usersService.getFriendsLeaderboard();
+    List<Friend> currentChallengeFriends = friends
         .where((friend) => _challengedUsersIds.contains(friend.userId))
         .toList();
     Navigator.push(
@@ -456,11 +478,78 @@ class _ChallengeListItemWidgetState extends State<ChallengeListItemWidget>
                 )));
   }
 
+  void onCopyReadingChallenge() async {
+    List<Friend> friends =
+        await ServiceProvider.usersService.getFriendsLeaderboard();
+    List<Friend> currentChallengeFriends = friends
+        .where((friend) => _challengedUsersIds.contains(friend.userId))
+        .toList();
+    Navigator.push(
+        context,
+        MaterialPageRoute(
+            builder: (context) => CreateQuranReadingChallengeScreen(
+                  initiallySelectedFriends: currentChallengeFriends,
+                  initiallySelectedSurahSubChallenges:
+                      widget.challenge.readingQuranChallenge.surahSubChallenges,
+                )));
+  }
+
+  void onCopyMemorizationChallenge() async {
+    List<Friend> friends =
+        await ServiceProvider.usersService.getFriendsLeaderboard();
+    List<Friend> currentChallengeFriends = friends
+        .where((friend) => _challengedUsersIds.contains(friend.userId))
+        .toList();
+    Navigator.push(
+        context,
+        MaterialPageRoute(
+            builder: (context) => CreateMemorizationChallengeScreen(
+                  initiallySelectedFriends: currentChallengeFriends,
+                  initiallySelectedNumberOfQuestions:
+                      widget.challenge.memorizationChallenge.questions.length,
+                  initiallySelectedDifficulty:
+                      widget.challenge.memorizationChallenge.difficulty,
+                  initiallySelectedFirstJuz:
+                      widget.challenge.memorizationChallenge.firstJuz,
+                  initiallySelectedLastJuz:
+                      widget.challenge.memorizationChallenge.lastJuz,
+                )));
+  }
+
+  String getCopyCaption() {
+    return widget.challenge.challengeType == ChallengeType.AZKAR ||
+            widget.challenge.challengeType == ChallengeType.READING_QURAN ||
+            widget.challenge.challengeType == ChallengeType.MEMORIZATION ||
+            widget.challenge.challengeType == ChallengeType.OTHER
+        ? AppLocalizations.of(context).copy
+        : "إضافة";
+  }
+
+  IconData getCopyIcon() {
+    return widget.challenge.challengeType == ChallengeType.AZKAR ||
+            widget.challenge.challengeType == ChallengeType.READING_QURAN ||
+            widget.challenge.challengeType == ChallengeType.MEMORIZATION ||
+            widget.challenge.challengeType == ChallengeType.OTHER
+        ? Icons.copy
+        : Icons.add;
+  }
+
   void onCopyPressed() {
-    if (widget.challenge.challengeType == ChallengeType.AZKAR) {
-      onCopyAzkarChallenge();
-    } else {
-      onCopyMeaningChallenge();
+    switch (widget.challenge.challengeType) {
+      case ChallengeType.AZKAR:
+        onCopyAzkarChallenge();
+        return;
+      case ChallengeType.MEANING:
+        onCopyMeaningChallenge();
+        return;
+      case ChallengeType.READING_QURAN:
+        onCopyReadingChallenge();
+        return;
+      case ChallengeType.MEMORIZATION:
+        onCopyMemorizationChallenge();
+        return;
+      case ChallengeType.OTHER:
+        return;
     }
   }
 
@@ -482,77 +571,125 @@ class _ChallengeListItemWidgetState extends State<ChallengeListItemWidget>
           ? '${friendsFullNamesCopy[0]} ،${friendsFullNamesCopy[1]}'
           : '${friendsFullNamesCopy[0]} ،${friendsFullNamesCopy[1]} ${AppLocalizations.of(context).and} ${ArabicUtils.englishToArabic((friendsFullNamesCopy.length - 2).toString())} $otherOrOthers';
     }
-    return Text(
-      text,
+
+    return AutoSizeText.rich(
+      TextSpan(
+        style: TextStyle(
+          color: Colors.black,
+          fontSize: 25,
+        ),
+        children: <TextSpan>[
+          new TextSpan(
+              text: "مع ",
+              style: new TextStyle(
+                  color: Colors.grey.shade700, fontWeight: FontWeight.bold)),
+          new TextSpan(
+            text: text,
+          ),
+        ],
+      ),
+      maxLines: 1,
       overflow: TextOverflow.ellipsis,
     );
   }
 
-  Widget getFriendProgressOnChallengeIcon() {
-    if (!_binary) {
-      return Container();
-    }
-
-    if (widget.challenge
-        .getUsersFinishedIds()
-        .any((userFinished) => userFinished == _challengedUsersIds[0])) {
-      return Icon(
-        Icons.done_outline,
-        size: 15,
-        color: Colors.green,
-      );
-    }
-
-    if (widget.challenge.deadlinePassed()) {
-      return Icon(
-        Icons.error_outline,
-        size: 15,
-        color: Colors.red,
-      );
-    }
-
-    return Icon(
-      Icons.not_started,
-      size: 15,
-      color: Colors.yellow,
-    );
-  }
-
-  Widget getIconConditionally() {
+  Widget getIcon() {
     if (widget.challenge.done()) {
       return Icon(
         Icons.done_outline,
         color: Colors.green,
+        size: 35,
       );
     }
     if (widget.challenge.deadlinePassed()) {
       return Icon(
         Icons.error_outline,
         color: Colors.red,
+        size: 35,
       );
     }
     return Icon(
       Icons.not_started,
       color: Colors.yellow,
+      size: 35,
     );
   }
 
   Widget getDeadlineText(BuildContext context) {
     if (widget.challenge.deadlinePassed()) {
-      return Text(AppLocalizations.of(context).passed);
+      return Text(
+        "انتهى التحدي",
+        style: new TextStyle(
+          color: Colors.grey.shade700,
+          fontWeight: FontWeight.bold,
+          fontSize: 25,
+        ),
+      );
     }
     int hoursLeft = widget.challenge.hoursLeft();
     if (hoursLeft == 0) {
       int minutesLeft = widget.challenge.minutesLeft();
       if (minutesLeft == 0) {
-        return Text(
-            '${AppLocalizations.of(context).endsAfterLessThan} ١ ${AppLocalizations.of(context).minute}');
+        return RichText(
+            text: TextSpan(
+          style: TextStyle(
+            color: Colors.black,
+            fontSize: 25,
+          ),
+          children: <TextSpan>[
+            new TextSpan(
+                text: AppLocalizations.of(context).endsAfterLessThan,
+                style: new TextStyle(
+                    color: Colors.grey.shade700, fontWeight: FontWeight.bold)),
+            new TextSpan(
+              text: ' ١ ',
+            ),
+            new TextSpan(
+              text: AppLocalizations.of(context).minute,
+            )
+          ],
+        ));
       }
-      return Text(
-          '${AppLocalizations.of(context).endsAfter} ${ArabicUtils.englishToArabic(minutesLeft.toString())} ${AppLocalizations.of(context).minute}');
+      return RichText(
+          text: TextSpan(
+        style: TextStyle(
+          color: Colors.black,
+          fontSize: 25,
+        ),
+        children: <TextSpan>[
+          new TextSpan(
+              text: AppLocalizations.of(context).endsAfter,
+              style: new TextStyle(
+                  color: Colors.grey.shade700, fontWeight: FontWeight.bold)),
+          new TextSpan(
+            text: ' ${ArabicUtils.englishToArabic(minutesLeft.toString())} ',
+          ),
+          new TextSpan(
+            text: AppLocalizations.of(context).minute,
+          )
+        ],
+      ));
     }
-    return Text(
-        '${AppLocalizations.of(context).endsAfter} ${ArabicUtils.englishToArabic(widget.challenge.hoursLeft().toString())} ${AppLocalizations.of(context).hour}');
+    return RichText(
+        text: TextSpan(
+      style: TextStyle(
+        color: Colors.black,
+        fontSize: 25,
+      ),
+      children: <TextSpan>[
+        new TextSpan(
+            text: AppLocalizations.of(context).endsAfter,
+            style: new TextStyle(
+                color: Colors.grey.shade700, fontWeight: FontWeight.bold)),
+        new TextSpan(
+          text:
+              ' ${ArabicUtils.englishToArabic(widget.challenge.hoursLeft().toString())} ',
+        ),
+        new TextSpan(
+          text: AppLocalizations.of(context).hour,
+        )
+      ],
+    ));
   }
 
   @override

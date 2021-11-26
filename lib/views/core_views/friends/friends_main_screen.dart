@@ -1,20 +1,18 @@
+import 'package:auto_size_text/auto_size_text.dart';
 import 'package:azkar/models/friend.dart';
-import 'package:azkar/models/friendship.dart';
-import 'package:azkar/models/friendship_scores.dart';
 import 'package:azkar/models/user.dart';
 import 'package:azkar/net/api_exception.dart';
-import 'package:azkar/net/services/service_provider.dart';
+import 'package:azkar/services/service_provider.dart';
 import 'package:azkar/utils/app_localizations.dart';
 import 'package:azkar/utils/features.dart';
 import 'package:azkar/utils/snack_bar_utils.dart';
 import 'package:azkar/utils/snapshot_utils.dart';
 import 'package:azkar/views/core_views/friends/add_friend/add_friend_screen.dart';
 import 'package:azkar/views/core_views/friends/all_friends/all_friends_widget.dart';
+import 'package:azkar/views/core_views/friends/all_friends/friend_list_item_loading_widget.dart';
 import 'package:azkar/views/core_views/friends/friend_requests/friend_requests_widget.dart';
-import 'package:azkar/views/core_views/home_page.dart';
 import 'package:feature_discovery/feature_discovery.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/scheduler.dart';
 import 'package:share_plus/share_plus.dart';
 
 class FriendsMainScreen extends StatefulWidget {
@@ -31,20 +29,17 @@ class _FriendsMainScreenState extends State<FriendsMainScreen>
   TabController _tabController;
   bool _addExpanded;
 
-  List<FriendshipScores> _friendshipScores;
+  List<Friend> _friendshipScores;
   List<Friend> _pendingFriends;
+
+  Future<void> _neededData;
+
+  int _tabIndex;
 
   @override
   void initState() {
     super.initState();
     _addExpanded = false;
-    SchedulerBinding.instance.addPostFrameCallback((Duration duration) {
-      FeatureDiscovery.discoverFeatures(
-        context,
-        // Feature ids for every feature that you want to showcase in order.
-        [Features.SHARE_USERNAME],
-      );
-    });
 
     allFriendsTabKey = UniqueKey();
     friendRequestsTabKey = UniqueKey();
@@ -52,33 +47,33 @@ class _FriendsMainScreenState extends State<FriendsMainScreen>
     _friendshipScores = [];
     _pendingFriends = [];
 
-    HomePage.setAppBarTitle('الأصدقاء');
+    _neededData = getNeededData();
+
+    _tabIndex = 0;
   }
 
   Future<void> getNeededData() async {
     try {
+      await ServiceProvider.homeService.getHomeDataAndCacheIt();
       _friendshipScores =
           await ServiceProvider.usersService.getFriendsLeaderboard();
       _friendshipScores = _friendshipScores
-          .where((friendshipScore) => !friendshipScore.friend.pending)
+          .where((friendshipScore) => !friendshipScore.pending)
           .toList();
 
-      Friendship friendship = await ServiceProvider.usersService.getFriends();
-      _pendingFriends =
-          friendship.friends.where((friend) => friend.pending).toList();
+      List<Friend> friendship =
+          await ServiceProvider.usersService.getFriendsLeaderboard();
+      _pendingFriends = friendship.where((friend) => friend.pending).toList();
     } on ApiException catch (e) {
-      SnackBarUtils.showSnackBar(context, e.error);
+      SnackBarUtils.showSnackBar(context, e.errorStatus.errorMessage);
     }
   }
 
   Widget getAllFriendsTabTitle() {
-    return RichText(
-        text: TextSpan(
+    return AutoSizeText.rich(TextSpan(
       // Note: Styles for TextSpans must be explicitly defined.
       // Child text spans will inherit styles from parent
-      style: new TextStyle(
-        color: Colors.black,
-      ),
+      style: new TextStyle(color: Colors.black, fontSize: 18),
       children: <TextSpan>[
         new TextSpan(
             text: 'الأصدقاء',
@@ -94,13 +89,10 @@ class _FriendsMainScreenState extends State<FriendsMainScreen>
   }
 
   Widget getFriendRequestsTabTitle() {
-    return RichText(
-        text: TextSpan(
+    return AutoSizeText.rich(TextSpan(
       // Note: Styles for TextSpans must be explicitly defined.
       // Child text spans will inherit styles from parent
-      style: new TextStyle(
-        color: Colors.black,
-      ),
+      style: new TextStyle(color: Colors.black, fontSize: 18),
       children: <TextSpan>[
         new TextSpan(
             text: 'طلبات صداقة',
@@ -120,58 +112,64 @@ class _FriendsMainScreenState extends State<FriendsMainScreen>
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<void>(
-      future: getNeededData(),
-      builder: (BuildContext context, AsyncSnapshot<void> snapshot) {
-        List<Widget> children;
-        if (snapshot.connectionState == ConnectionState.done) {
-          friendsTabs = <Tab>[
-            Tab(
-              key: allFriendsTabKey,
-              child: getAllFriendsTabTitle(),
-            ),
-            Tab(
-              key: friendRequestsTabKey,
-              child: getFriendRequestsTabTitle(),
-            )
-          ];
+    return SafeArea(
+      child: FutureBuilder<void>(
+        future: _neededData,
+        builder: (BuildContext context, AsyncSnapshot<void> snapshot) {
+          List<Widget> children;
+          if (snapshot.connectionState == ConnectionState.done) {
+            friendsTabs = <Tab>[
+              Tab(
+                key: allFriendsTabKey,
+                child: getAllFriendsTabTitle(),
+              ),
+              Tab(
+                key: friendRequestsTabKey,
+                child: getFriendRequestsTabTitle(),
+              )
+            ];
 
-          _tabController =
-              TabController(vsync: this, length: friendsTabs.length);
-          return getMainWidget();
-        } else if (snapshot.hasError) {
-          children = <Widget>[
-            Icon(
-              Icons.error_outline,
-              color: Colors.red,
-              size: 60,
+            _tabController = TabController(
+                vsync: this,
+                length: friendsTabs.length,
+                initialIndex: _tabIndex);
+            _tabController.addListener(() {
+              setState(() {
+                _tabIndex = _tabController.index;
+              });
+            });
+            return getMainWidget();
+          } else if (snapshot.hasError) {
+            children = <Widget>[
+              Icon(
+                Icons.error_outline,
+                color: Colors.red,
+                size: 60,
+              ),
+              Padding(
+                padding: const EdgeInsets.only(top: 16),
+                child: SnapshotUtils.getErrorWidget(context, snapshot),
+              )
+            ];
+          } else {
+            children = List.generate(5, (_) => FriendListItemLoadingWidget());
+          }
+          // Add space for the top tap.
+          children.insert(
+            0,
+            Container(
+              height: MediaQuery.of(context).size.height / 11,
             ),
-            Padding(
-              padding: const EdgeInsets.only(top: 16),
-              child: SnapshotUtils.getErrorWidget(context, snapshot),
-            )
-          ];
-        } else {
-          children = <Widget>[
-            SizedBox(
-              child: CircularProgressIndicator(),
-              width: 60,
-              height: 60,
+          );
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: children,
             ),
-            Padding(
-              padding: EdgeInsets.only(top: 16),
-              child: Text('${AppLocalizations.of(context).loadingFriends}...'),
-            )
-          ];
-        }
-        return Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: children,
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 
@@ -182,6 +180,8 @@ class _FriendsMainScreenState extends State<FriendsMainScreen>
           title: TabBar(
             controller: _tabController,
             tabs: friendsTabs,
+            // indicatorColor: Theme.of(context).colorScheme.primary,
+            // overlayColor: MaterialStateProperty<Color>().resolve((states) -> Theme.of(context).colorScheme.primary),
           )),
       body: TabBarView(
         controller: _tabController,
@@ -190,14 +190,18 @@ class _FriendsMainScreenState extends State<FriendsMainScreen>
             return AllFriendsWidget(
               friendshipScores: _friendshipScores,
               onRefreshRequested: () {
-                setState(() {});
+                setState(() {
+                  _neededData = getNeededData();
+                });
               },
             );
           } else if (tab.key == friendRequestsTabKey) {
             return FriendRequestsWidget(
               pendingFriends: _pendingFriends,
               onFriendRequestResolvedCallback: () {
-                setState(() {});
+                setState(() {
+                  _neededData = getNeededData();
+                });
               },
             );
           } else {
@@ -214,11 +218,15 @@ class _FriendsMainScreenState extends State<FriendsMainScreen>
             maintainSize: false,
             maintainState: false,
             child: DescribedFeatureOverlay(
+                // BUG: This is not shown at the moment.
                 featureId: Features.SHARE_USERNAME,
                 barrierDismissible: false,
                 backgroundDismissible: false,
                 contentLocation: ContentLocation.above,
-                tapTarget: Icon(Icons.share),
+                tapTarget: Icon(
+                  Icons.share,
+                  size: 25,
+                ),
                 // The widget that will be displayed as the tap target.
                 description: Center(
                   child: Column(
@@ -226,18 +234,15 @@ class _FriendsMainScreenState extends State<FriendsMainScreen>
                       Row(
                         children: [
                           Expanded(
-                              child: Padding(
-                            padding: EdgeInsets.all(0),
-                          )),
-                          Container(
-                            alignment: Alignment.center,
-                            width: MediaQuery.of(context).size.width / 2,
-                            child: Text(
-                              AppLocalizations.of(context).shareUsernameTitle,
-                              softWrap: true,
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                  fontSize: 20, fontWeight: FontWeight.bold),
+                            child: FittedBox(
+                              child: Text(
+                                AppLocalizations.of(context).shareUsernameTitle,
+                                maxLines: 1,
+                                softWrap: true,
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                    fontSize: 25, fontWeight: FontWeight.bold),
+                              ),
                             ),
                           ),
                         ],
@@ -246,32 +251,34 @@ class _FriendsMainScreenState extends State<FriendsMainScreen>
                       Row(
                         children: [
                           Expanded(
-                              child: Padding(
-                            padding: EdgeInsets.all(0),
-                          )),
-                          Container(
-                            alignment: Alignment.centerRight,
-                            width: MediaQuery.of(context).size.width / 2,
                             child: Text(
-                              AppLocalizations.of(context)
-                                  .shareUsernameExplanation,
-                              softWrap: true,
-                              textAlign: TextAlign.center,
-                            ),
+                                AppLocalizations.of(context)
+                                    .shareUsernameExplanation,
+                                softWrap: true,
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 20,
+                                )),
                           ),
                         ],
                       )
                     ],
                   ),
                 ),
-                backgroundColor: Theme.of(context).accentColor,
-                targetColor: Theme.of(context).primaryColor,
+                backgroundColor: Theme.of(context).colorScheme.secondary,
+                targetColor: Theme.of(context).colorScheme.primary,
                 textColor: Colors.black,
                 overflowMode: OverflowMode.wrapBackground,
                 child: FloatingActionButton.extended(
                   heroTag: "shareWithFriend",
-                  icon: Icon(Icons.share),
-                  label: Text(AppLocalizations.of(context).shareWithFriend),
+                  icon: Icon(
+                    Icons.share,
+                    size: 25,
+                  ),
+                  label: Text(
+                    AppLocalizations.of(context).shareWithFriend,
+                    style: TextStyle(fontSize: 25),
+                  ),
                   onPressed: () async {
                     User currentUser;
                     try {
@@ -280,7 +287,7 @@ class _FriendsMainScreenState extends State<FriendsMainScreen>
                     } on ApiException catch (e) {
                       SnackBarUtils.showSnackBar(
                         context,
-                        '${AppLocalizations.of(context).error}: ${e.error}',
+                        '${AppLocalizations.of(context).error}: ${e.errorStatus.errorMessage}',
                       );
                       return;
                     }
@@ -298,8 +305,14 @@ class _FriendsMainScreenState extends State<FriendsMainScreen>
             maintainSize: false,
             child: FloatingActionButton.extended(
                 heroTag: "addFriend",
-                icon: Icon(Icons.add),
-                label: Text(AppLocalizations.of(context).addFriend),
+                icon: Icon(
+                  Icons.add,
+                  size: 25,
+                ),
+                label: Text(
+                  AppLocalizations.of(context).addFriend,
+                  style: TextStyle(fontSize: 25),
+                ),
                 onPressed: () {
                   Navigator.push(
                       context,
@@ -310,14 +323,69 @@ class _FriendsMainScreenState extends State<FriendsMainScreen>
           Visibility(
             visible: !_addExpanded,
             maintainSize: false,
-            child: FloatingActionButton.extended(
-                heroTag: "mainFloating",
-                label: Icon(Icons.add),
-                onPressed: () {
-                  setState(() {
-                    _addExpanded = true;
-                  });
-                }),
+            child: DescribedFeatureOverlay(
+                featureId: Features.ADD_FRIEND,
+                barrierDismissible: false,
+                backgroundDismissible: false,
+                contentLocation: ContentLocation.above,
+                tapTarget: Icon(
+                  Icons.add,
+                  size: 30,
+                ),
+                // The widget that will be displayed as the tap target.
+                description: Center(
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                "إضافة صديق",
+                                maxLines: 1,
+                                softWrap: true,
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                    fontSize: 25, fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      Padding(padding: EdgeInsets.all(8)),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              "اضغط هنا لإضافة صديق جديد أو لمشاركة اسم المستخدم الخاص بك مع صديق أو للعثور على صديق من خلال التطبيق.",
+                              softWrap: true,
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 20,
+                              ),
+                            ),
+                          ),
+                        ],
+                      )
+                    ],
+                  ),
+                ),
+                backgroundColor: Theme.of(context).colorScheme.secondary,
+                targetColor: Theme.of(context).colorScheme.primary,
+                textColor: Colors.black,
+                overflowMode: OverflowMode.wrapBackground,
+                child: FloatingActionButton.extended(
+                    heroTag: "addFloatingButton",
+                    label: Icon(
+                      Icons.add,
+                      size: 25,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _addExpanded = true;
+                      });
+                    })),
           ),
           Visibility(
               visible: _addExpanded,

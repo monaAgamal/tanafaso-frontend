@@ -4,12 +4,13 @@ import 'package:azkar/models/sub_challenge.dart';
 import 'package:azkar/net/api_exception.dart';
 import 'package:azkar/net/api_interface/challenges/requests/add_azkar_challenge_in_group_request.dart';
 import 'package:azkar/net/api_interface/challenges/requests/add_azkar_challenge_request_body.dart';
-import 'package:azkar/net/services/service_provider.dart';
+import 'package:azkar/services/service_provider.dart';
 import 'package:azkar/utils/app_localizations.dart';
 import 'package:azkar/utils/arabic_utils.dart';
 import 'package:azkar/utils/snack_bar_utils.dart';
 import 'package:azkar/views/core_views/challenges/create_challenge/select_azkar/selected_azkar_widget.dart';
 import 'package:azkar/views/core_views/challenges/create_challenge/select_friend/selected_friends_widget.dart';
+import 'package:azkar/views/core_views/home_page.dart';
 import 'package:flutter/material.dart';
 import 'package:progress_state_button/iconed_button.dart';
 import 'package:progress_state_button/progress_button.dart';
@@ -43,6 +44,7 @@ class _CreateAzkarChallengeScreenState
   List<Friend> _selectedFriends;
   ButtonState progressButtonState;
   int _expiresAfterHoursNum;
+  ScrollController pageScrollController;
 
   initChallengeNameController() {
     _lastChallengeName = widget.initiallyChosenName;
@@ -95,6 +97,8 @@ class _CreateAzkarChallengeScreenState
     progressButtonState = ButtonState.idle;
     _expiresAfterHoursNum = 24;
 
+    pageScrollController = ScrollController();
+
     super.initState();
   }
 
@@ -102,7 +106,11 @@ class _CreateAzkarChallengeScreenState
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(AppLocalizations.of(context).createAChallenge),
+        title: FittedBox(
+            child: Text(
+          "قراءة أذكار",
+          style: TextStyle(fontSize: 30),
+        )),
       ),
       body: GestureDetector(
         behavior: HitTestBehavior.opaque,
@@ -125,6 +133,7 @@ class _CreateAzkarChallengeScreenState
                     child: ListView(
                       addAutomaticKeepAlives: true,
                       shrinkWrap: true,
+                      controller: pageScrollController,
                       children: [
                         Card(
                           child: Column(
@@ -145,14 +154,18 @@ class _CreateAzkarChallengeScreenState
                                       Padding(
                                         padding: const EdgeInsets.all(8.0),
                                         child: Icon(
-                                            Icons.drive_file_rename_outline),
+                                          Icons.drive_file_rename_outline,
+                                          size: 25,
+                                        ),
                                       ),
-                                      Text(
-                                        AppLocalizations.of(context)
-                                            .challengeName,
-                                        style: TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 17),
+                                      FittedBox(
+                                        child: Text(
+                                          AppLocalizations.of(context)
+                                              .challengeName,
+                                          style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 25),
+                                        ),
                                       ),
                                       Expanded(
                                           child: Padding(
@@ -166,6 +179,7 @@ class _CreateAzkarChallengeScreenState
                                           child: Icon(
                                             Icons.info_outline,
                                             color: Colors.grey,
+                                            size: 25,
                                           ),
                                         ),
                                       )
@@ -176,27 +190,32 @@ class _CreateAzkarChallengeScreenState
                               Padding(
                                 padding: const EdgeInsets.all(8.0),
                                 child: TextField(
-                                  maxLength: 25,
-                                  autofocus:
-                                      (widget.initiallyChosenName?.length ??
-                                              0) ==
-                                          0,
+                                  maxLength: 20,
                                   maxLines: 1,
                                   textDirection: TextDirection.rtl,
                                   textAlign: TextAlign.center,
-                                  decoration: new InputDecoration(
-                                    alignLabelWithHint: true,
-                                    border: new OutlineInputBorder(
-                                        borderSide:
-                                            new BorderSide(color: Colors.teal)),
-                                  ),
                                   controller: _challengeNameController,
+                                  decoration: new InputDecoration(
+                                    enabledBorder: const OutlineInputBorder(
+                                      borderSide: const BorderSide(
+                                          color: Colors.grey, width: 0.0),
+                                    ),
+                                    focusedBorder: const OutlineInputBorder(
+                                      borderSide: const BorderSide(
+                                          color: Colors.grey, width: 0.0),
+                                    ),
+                                    border: const OutlineInputBorder(
+                                      borderSide: const BorderSide(
+                                          color: Colors.grey, width: 0.0),
+                                    ),
+                                  ),
                                 ),
                               ),
                             ],
                           ),
                         ),
                         SelectedFriendsWidget(
+                          scrollController: pageScrollController,
                           initiallySelectedFriends:
                               widget.initiallySelectedFriends,
                           onSelectedFriendsChanged: (newFriends) {
@@ -233,13 +252,18 @@ class _CreateAzkarChallengeScreenState
                                 ),
                                 Padding(
                                   padding: const EdgeInsets.all(8.0),
-                                  child: Icon(Icons.date_range),
+                                  child: Icon(
+                                    Icons.date_range,
+                                    size: 25,
+                                  ),
                                 ),
-                                Text(
-                                  AppLocalizations.of(context).deadline,
-                                  style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 17),
+                                FittedBox(
+                                  child: Text(
+                                    AppLocalizations.of(context).deadline,
+                                    style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 25),
+                                  ),
                                 ),
                               ]),
                               Padding(
@@ -247,36 +271,48 @@ class _CreateAzkarChallengeScreenState
                                 child: Row(
                                   mainAxisAlignment: MainAxisAlignment.start,
                                   children: [
-                                    RichText(
-                                        text: TextSpan(
-                                      // Note: Styles for TextSpans must be explicitly defined.
-                                      // Child text spans will inherit styles from parent
-                                      style: new TextStyle(
-                                        color: Colors.black,
+                                    Flexible(
+                                      child: FittedBox(
+                                        fit: BoxFit.scaleDown,
+                                        child: Padding(
+                                          padding: const EdgeInsets.all(8.0),
+                                          child: RichText(
+                                              maxLines: 1,
+                                              text: TextSpan(
+                                                // Note: Styles for TextSpans must be explicitly defined.
+                                                // Child text spans will inherit styles from parent
+                                                style: new TextStyle(
+                                                    color: Colors.black,
+                                                    fontSize: 25),
+                                                children: <TextSpan>[
+                                                  new TextSpan(
+                                                    text: 'التحدي ينتهي بعد',
+                                                  ),
+                                                  new TextSpan(
+                                                      text:
+                                                          '  ${ArabicUtils.englishToArabic(_expiresAfterHoursNum.toString())}  ',
+                                                      style: TextStyle(
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                        fontSize: 30,
+                                                      )),
+                                                  new TextSpan(
+                                                    text: 'ساعات.',
+                                                  ),
+                                                ],
+                                              )),
+                                        ),
                                       ),
-                                      children: <TextSpan>[
-                                        new TextSpan(
-                                          text: 'التحدي ينتهي بعد',
-                                        ),
-                                        new TextSpan(
-                                            text:
-                                                '  ${ArabicUtils.englishToArabic(_expiresAfterHoursNum.toString())}  ',
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 20,
-                                            )),
-                                        new TextSpan(
-                                          text: 'ساعات.',
-                                        ),
-                                      ],
-                                    )),
+                                    ),
                                   ],
                                 ),
                               ),
                               Slider(
                                 value: _expiresAfterHoursNum.toDouble(),
-                                activeColor: Theme.of(context).primaryColor,
-                                inactiveColor: Theme.of(context).primaryColor,
+                                activeColor:
+                                    Theme.of(context).colorScheme.primary,
+                                inactiveColor:
+                                    Theme.of(context).colorScheme.primary,
                                 min: 1,
                                 max: 24,
                                 divisions: 24,
@@ -295,17 +331,22 @@ class _CreateAzkarChallengeScreenState
                                   padding: const EdgeInsets.all(8.0),
                                   child: Row(
                                     children: [
-                                      Icon(Icons.directions_run),
+                                      Icon(
+                                        Icons.directions_run,
+                                        size: 25,
+                                      ),
                                       Padding(
                                           padding: EdgeInsets.only(left: 8)),
                                       Row(
                                         children: [
-                                          Text(
-                                            AppLocalizations.of(context)
-                                                .theMotivationMessage,
-                                            style: TextStyle(
-                                                fontSize: 17,
-                                                fontWeight: FontWeight.bold),
+                                          FittedBox(
+                                            child: Text(
+                                              AppLocalizations.of(context)
+                                                  .theMotivationMessage,
+                                              style: TextStyle(
+                                                  fontSize: 25,
+                                                  fontWeight: FontWeight.bold),
+                                            ),
                                           ),
                                           Padding(
                                               padding:
@@ -322,6 +363,7 @@ class _CreateAzkarChallengeScreenState
                                         child: Icon(
                                           Icons.info_outline,
                                           color: Colors.grey,
+                                          size: 25,
                                         ),
                                       )
                                     ],
@@ -335,10 +377,18 @@ class _CreateAzkarChallengeScreenState
                                   maxLines: 1,
                                   textAlign: TextAlign.center,
                                   decoration: new InputDecoration(
-                                    alignLabelWithHint: true,
-                                    border: new OutlineInputBorder(
-                                        borderSide:
-                                            new BorderSide(color: Colors.teal)),
+                                    enabledBorder: const OutlineInputBorder(
+                                      borderSide: const BorderSide(
+                                          color: Colors.grey, width: 0.0),
+                                    ),
+                                    focusedBorder: const OutlineInputBorder(
+                                      borderSide: const BorderSide(
+                                          color: Colors.grey, width: 0.0),
+                                    ),
+                                    border: const OutlineInputBorder(
+                                      borderSide: const BorderSide(
+                                          color: Colors.grey, width: 0.0),
+                                    ),
                                   ),
                                   controller: _motivationController,
                                 ),
@@ -452,9 +502,6 @@ class _CreateAzkarChallengeScreenState
         context,
         AppLocalizations.of(context).pleaseFillUpAllTheCellsProperly,
       );
-      setState(() {
-        progressButtonState = ButtonState.fail;
-      });
       return;
     }
 
@@ -485,7 +532,7 @@ class _CreateAzkarChallengeScreenState
     } on ApiException catch (e) {
       SnackBarUtils.showSnackBar(
         context,
-        e.error,
+        e.errorStatus.errorMessage,
       );
       setState(() {
         progressButtonState = ButtonState.fail;
@@ -502,7 +549,12 @@ class _CreateAzkarChallengeScreenState
       AppLocalizations.of(context).challengeHasBeenAddedSuccessfully,
       color: Colors.green.shade400,
     );
-    Navigator.of(context).pop();
+    Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(
+            builder: (_) => HomePage(
+                  initiallySelectedTopicType: TopicType.CHALLENGES,
+                )),
+        (_) => false);
   }
 
   bool readyToFinishChallenge(bool showWarnings) {

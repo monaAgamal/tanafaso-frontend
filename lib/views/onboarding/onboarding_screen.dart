@@ -32,14 +32,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           color: Colors.green.shade900),
       bodyTextStyle: bodyStyle,
       descriptionPadding: EdgeInsets.fromLTRB(16.0, 0.0, 16.0, 16.0),
-      pageColor: Theme.of(context).primaryColor,
+      pageColor: Theme.of(context).colorScheme.primary,
       imagePadding: EdgeInsets.zero,
     );
 
-    print(Theme.of(context).primaryColor);
     return IntroductionScreen(
       key: introKey,
-      globalBackgroundColor: Theme.of(context).primaryColor,
+      globalBackgroundColor: Theme.of(context).colorScheme.primary,
       globalHeader: Align(
         alignment: Alignment.topRight,
         child: SafeArea(
@@ -52,7 +51,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         PageViewModel(
           title: "مرحبا بكم في تنافسوا 🔥",
           body: "شجع أقاربك و أصدقائك وتنافس معهم على ذكر الله",
-          image: _buildImage('logo.png'),
+          image: _buildImage('logo_fore.png'),
           decoration: pageDecoration,
         ),
         PageViewModel(
@@ -123,7 +122,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         ),
       ),
       dotsContainerDecorator: ShapeDecoration(
-        color: Theme.of(context).primaryColor,
+        color: Theme.of(context).colorScheme.primary,
         shape: RoundedRectangleBorder(),
       ),
     );

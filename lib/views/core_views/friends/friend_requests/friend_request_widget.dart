@@ -1,6 +1,6 @@
 import 'package:azkar/models/friend.dart';
 import 'package:azkar/net/api_exception.dart';
-import 'package:azkar/net/services/service_provider.dart';
+import 'package:azkar/services/service_provider.dart';
 import 'package:azkar/utils/app_localizations.dart';
 import 'package:azkar/utils/snack_bar_utils.dart';
 import 'package:flutter/material.dart';
@@ -99,7 +99,7 @@ class _FriendRequestWidgetState extends State<FriendRequestWidget> {
     try {
       await ServiceProvider.usersService.acceptFriend(widget.friend.userId);
     } on ApiException catch (e) {
-      SnackBarUtils.showSnackBar(context, e.error);
+      SnackBarUtils.showSnackBar(context, e.errorStatus.errorMessage);
       return;
     }
     SnackBarUtils.showSnackBar(context,
@@ -112,7 +112,7 @@ class _FriendRequestWidgetState extends State<FriendRequestWidget> {
     try {
       await ServiceProvider.usersService.rejectFriend(widget.friend.userId);
     } on ApiException catch (e) {
-      SnackBarUtils.showSnackBar(context, e.error);
+      SnackBarUtils.showSnackBar(context, e.errorStatus.errorMessage);
       return;
     }
     SnackBarUtils.showSnackBar(

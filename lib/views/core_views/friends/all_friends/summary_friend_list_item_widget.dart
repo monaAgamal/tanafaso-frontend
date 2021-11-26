@@ -1,63 +1,78 @@
-import 'package:azkar/models/friendship_scores.dart';
+import 'package:azkar/models/friend.dart';
 import 'package:flutter/material.dart';
 
 typedef OnToggleViewCallback = void Function();
 
 class SummaryFriendListItemWidget extends StatelessWidget {
-  final FriendshipScores friendshipScores;
+  final Friend friendshipScore;
   final OnToggleViewCallback toggleViewCallback;
 
   SummaryFriendListItemWidget({
-    @required this.friendshipScores,
+    @required this.friendshipScore,
     @required this.toggleViewCallback,
   });
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => toggleViewCallback.call(),
-      child: Padding(
-        padding: const EdgeInsets.only(left: 4.0, top: 4.0, right: 4.0),
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-              minHeight: MediaQuery.of(context).size.height / 12),
-          child: Card(
-            margin: EdgeInsets.all(0),
-            child: Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Row(
-                children: [
-                  Expanded(
-                    flex: 5,
+    return Padding(
+      padding: const EdgeInsets.only(left: 4.0, top: 4.0, right: 4.0),
+      child: ConstrainedBox(
+        constraints:
+            BoxConstraints(minHeight: MediaQuery.of(context).size.height / 10),
+        child: RawMaterialButton(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          fillColor: Colors.white,
+          onPressed: () {
+            toggleViewCallback.call();
+          },
+          child: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: [
+                Expanded(
+                  flex: 5,
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerRight,
                     child: Text(
-                      '${friendshipScores.friend.firstName} ${friendshipScores.friend.lastName}',
+                      '${friendshipScore.firstName} ${friendshipScore.lastName}',
                       textAlign: TextAlign.right,
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
-                        fontSize: 20,
+                        fontSize: 25,
                       ),
+                      maxLines: 1,
                     ),
                   ),
-                  Expanded(
-                    flex: 1,
-                    child: Row(
-                      children: [
-                        Text(
-                          (friendshipScores.currentUserScore -
-                                  friendshipScores.friendScore)
-                              .abs()
-                              .toString(),
-                          style: TextStyle(
-                            color: getColor(),
+                ),
+                Expanded(
+                  flex: 2,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: FittedBox(
+                          alignment: Alignment.centerLeft,
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            (friendshipScore.userTotalScore -
+                                    friendshipScore.friendTotalScore)
+                                .abs()
+                                .toString(),
+                            style: TextStyle(color: getColor(), fontSize: 25),
+                            maxLines: 1,
+                            textAlign: TextAlign.right,
                           ),
                         ),
-                        Padding(padding: EdgeInsets.only(right: 8)),
-                        getArrowIcon(),
-                      ],
-                    ),
+                      ),
+                      Padding(padding: EdgeInsets.only(right: 8)),
+                      getArrowIcon(),
+                    ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),
@@ -66,13 +81,13 @@ class SummaryFriendListItemWidget extends StatelessWidget {
   }
 
   Icon getArrowIcon() {
-    if (friendshipScores.friendScore > friendshipScores.currentUserScore) {
+    if (friendshipScore.friendTotalScore > friendshipScore.userTotalScore) {
       return Icon(
         Icons.arrow_downward,
         color: getColor(),
       );
-    } else if (friendshipScores.friendScore <
-        friendshipScores.currentUserScore) {
+    } else if (friendshipScore.friendTotalScore <
+        friendshipScore.userTotalScore) {
       return Icon(
         Icons.arrow_upward,
         color: getColor(),
@@ -80,15 +95,16 @@ class SummaryFriendListItemWidget extends StatelessWidget {
     }
     return Icon(
       Icons.done_all,
+      size: 25,
       color: getColor(),
     );
   }
 
   Color getColor() {
-    if (friendshipScores.friendScore > friendshipScores.currentUserScore) {
+    if (friendshipScore.friendTotalScore > friendshipScore.userTotalScore) {
       return Colors.red;
-    } else if (friendshipScores.friendScore <
-        friendshipScores.currentUserScore) {
+    } else if (friendshipScore.friendTotalScore <
+        friendshipScore.userTotalScore) {
       return Colors.green;
     }
     return Colors.yellow.shade700;

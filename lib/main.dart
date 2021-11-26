@@ -5,7 +5,9 @@
 import 'dart:io';
 import 'dart:ui';
 
+import 'package:azkar/services/service_provider.dart';
 import 'package:azkar/utils/app_localizations.dart';
+import 'package:azkar/utils/quran_ayahs.dart';
 import 'package:azkar/views/landing_widget.dart';
 import 'package:feature_discovery/feature_discovery.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -14,7 +16,12 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_ringtone_player/flutter_ringtone_player.dart';
 import 'package:flutter_statusbarcolor/flutter_statusbarcolor.dart';
+
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  FlutterRingtonePlayer.playNotification();
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -26,6 +33,10 @@ void main() async {
     systemNavigationBarColor: Color(0xffcef5ce),
     statusBarColor: Color(0xffcef5ce),
   ));
+  if (QuranAyahs.ayahs.isEmpty) {
+    String quran = await rootBundle.loadString('assets/quran.txt');
+    QuranAyahs.ayahs = quran.split("\n");
+  }
   runApp(MyApp());
 }
 
@@ -35,6 +46,8 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
+  Widget _landingWidget;
+
   Future<FirebaseApp> asyncInitialization(BuildContext context) async {
     FirebaseApp app = await Firebase.initializeApp();
     await FirebaseMessaging.instance
@@ -46,7 +59,15 @@ class _MyAppState extends State<MyApp> {
     if (Platform.isIOS) {
       FirebaseMessaging.instance.requestPermission();
     }
+    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
     return app;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+
+    ServiceProvider.cacheManager.invalidateFrequentlyChangingData();
   }
 
   @override
@@ -54,12 +75,18 @@ class _MyAppState extends State<MyApp> {
     return FutureBuilder(
         future: asyncInitialization(context),
         builder: (BuildContext context, snapshot) {
-          if (snapshot.hasData) {
-            return getMaterialAppWithBody(LandingWidget());
+          if (snapshot.connectionState == ConnectionState.done) {
+            if (_landingWidget == null) {
+              _landingWidget = getMaterialAppWithBody(LandingWidget());
+            }
+            return _landingWidget;
           } else if (snapshot.hasError) {
             print('حدث خطأ أثناء إعداد هذا الجهاز لتلقي الإخطارات');
 
-            return getMaterialAppWithBody(LandingWidget());
+            if (_landingWidget == null) {
+              _landingWidget = getMaterialAppWithBody(LandingWidget());
+            }
+            return _landingWidget;
           } else {
             // TODO(omorsi): Show loader
             return getMaterialAppWithBody(Container(
@@ -91,17 +118,38 @@ class _MyAppState extends State<MyApp> {
           body: body,
         ),
         theme: ThemeData(
-          primaryColor: Color(0xffcef5ce),
-          accentColor: Colors.white,
-          scaffoldBackgroundColor: Color(0xffcef5ce),
-          floatingActionButtonTheme:
-              FloatingActionButtonThemeData(backgroundColor: Colors.white),
-          buttonColor: Colors.white,
-          elevatedButtonTheme: ElevatedButtonThemeData(
-              style: ButtonStyle(
-            backgroundColor:
-                MaterialStateProperty.resolveWith((_) => Colors.white),
+          primaryColor: Color(0xffcef6ce),
+          colorScheme: ColorScheme(
+            primary: Color(0xffcef5ce),
+            primaryVariant: Color(0xffcee6ce),
+            secondary: Colors.white,
+            secondaryVariant: Colors.white30,
+            surface: Colors.white,
+            background: Color(0xffcef5ce),
+            error: Colors.red.shade600,
+            onPrimary: Color(0xffcef5ce),
+            onSecondary: Colors.white,
+            onSurface: Colors.white,
+            onBackground: Color(0xffcef5ce),
+            onError: Colors.red.shade600,
+            brightness: Brightness.light,
+          ),
+          buttonTheme: ButtonThemeData(
+              colorScheme: ColorScheme.light(
+            primary: Colors.white,
           )),
+          scaffoldBackgroundColor: Color(0xffcef5ce),
+          floatingActionButtonTheme: FloatingActionButtonThemeData(
+              backgroundColor: Colors.white, foregroundColor: Colors.black),
+          // elevatedButtonTheme: ElevatedButtonThemeData(
+          //     style: ButtonStyle(
+          //   // backgroundColor:
+          //   //     MaterialStateProperty.resolveWith((_) => Colors.white),
+          //   //     textStyle: MaterialStateProperty<TextStyle>().resolve() {}
+          //   foregroundColor:
+          //       MaterialStateColor.resolveWith((_) => Colors.black),
+          //       textStyle: MaterialStateProperty<TextStyle>().
+          // )),
           cardTheme: CardTheme(elevation: 10),
           iconTheme: IconThemeData(color: Colors.black),
           textTheme: TextTheme(
@@ -116,6 +164,17 @@ class _MyAppState extends State<MyApp> {
             bodyText1: TextStyle(color: Colors.black),
             bodyText2: TextStyle(color: Colors.black),
             button: TextStyle(color: Colors.black),
+          ),
+          indicatorColor: Colors.white,
+          tabBarTheme: TabBarTheme(
+            labelColor: Color(0xffcef5ce),
+          ),
+          appBarTheme: AppBarTheme(
+            backgroundColor: Color(0xffcef5ce),
+            titleTextStyle: TextStyle(color: Colors.black, fontSize: 30),
+            iconTheme: IconThemeData(
+              color: Colors.black, //change your color here
+            ),
           ),
         ),
       ),

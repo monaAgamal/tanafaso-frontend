@@ -1,5 +1,6 @@
 import 'dart:collection';
 
+import 'package:auto_size_text/auto_size_text.dart';
 import 'package:azkar/models/sub_challenge.dart';
 import 'package:azkar/models/zekr.dart';
 import 'package:azkar/utils/app_localizations.dart';
@@ -25,6 +26,7 @@ class _SelectAzkarScreenState extends State<SelectAzkarScreen> {
   @override
   void initState() {
     super.initState();
+
     filteredAzkarIds = HashSet();
     // All azkar are included at the beginning.
     widget.azkar.forEach((zekr) {
@@ -52,7 +54,12 @@ class _SelectAzkarScreenState extends State<SelectAzkarScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
         appBar: AppBar(
-          title: Text(AppLocalizations.of(context).selectAzkar),
+          title: AutoSizeText(
+            AppLocalizations.of(context).selectAzkar,
+            style: TextStyle(
+              fontSize: 30,
+            ),
+          ),
         ),
         body: GestureDetector(
           behavior: HitTestBehavior.translucent,
@@ -87,8 +94,13 @@ class _SelectAzkarScreenState extends State<SelectAzkarScreen> {
               Expanded(
                 child: Container(
                   child: ListView.separated(
-                      separatorBuilder: (context, index) =>
-                          Padding(padding: EdgeInsets.only(bottom: 4)),
+                      separatorBuilder: (context, index) {
+                        if (filteredAzkarIds.contains(widget.azkar[index].id)) {
+                          return Padding(padding: EdgeInsets.only(bottom: 4));
+                        } else {
+                          return const SizedBox.shrink();
+                        }
+                      },
                       padding: EdgeInsets.all(0),
                       shrinkWrap: true,
                       itemCount: widget.azkar.length,
@@ -111,13 +123,13 @@ class _SelectAzkarScreenState extends State<SelectAzkarScreen> {
                     child: FlatButton(
                       onPressed: () => onCreatePressed(),
                       child: Center(
-                          child: Text(
+                          child: AutoSizeText(
                         readyToFinish()
                             ? AppLocalizations.of(context).add
                             : AppLocalizations.of(context).addNotReady,
                         style: TextStyle(
                             color: Colors.white,
-                            fontSize: 18,
+                            fontSize: 25,
                             fontWeight: FontWeight.bold),
                       )),
                     ),

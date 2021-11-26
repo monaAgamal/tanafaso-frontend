@@ -1,5 +1,5 @@
 import 'package:azkar/net/api_exception.dart';
-import 'package:azkar/net/services/service_provider.dart';
+import 'package:azkar/services/service_provider.dart';
 import 'package:azkar/utils/app_localizations.dart';
 import 'package:azkar/utils/snack_bar_utils.dart';
 import 'package:azkar/views/auth/login/login_screen.dart';
@@ -46,7 +46,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                             child: new Container(
                               height: MediaQuery.of(context).size.height,
                               decoration: BoxDecoration(
-                                color: Theme.of(context).primaryColor,
+                                color: Theme.of(context).colorScheme.primary,
                               ),
                               child: SingleChildScrollView(
                                 child: Column(
@@ -185,7 +185,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
         ButtonState.idle: IconedButton(
             text: AppLocalizations.of(context).send,
             icon: Icon(Icons.add, color: Colors.black),
-            color: Theme.of(context).buttonColor),
+            color: Theme.of(context).buttonTheme.colorScheme.primary),
         ButtonState.loading: IconedButton(
             text: AppLocalizations.of(context).sending,
             color: Colors.yellow.shade200),
@@ -242,7 +242,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
       });
       SnackBarUtils.showSnackBar(
         context,
-        '${AppLocalizations.of(context).error}: ${e.error}',
+        '${AppLocalizations.of(context).error}: ${e.errorStatus.errorMessage}',
       );
       return;
     }

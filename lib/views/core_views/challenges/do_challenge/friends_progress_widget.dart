@@ -1,16 +1,20 @@
+import 'package:auto_size_text/auto_size_text.dart';
 import 'package:azkar/models/challenge.dart';
-import 'package:azkar/utils/app_localizations.dart';
 import 'package:flutter/material.dart';
 
 class FriendsProgressWidget extends StatefulWidget {
   final Challenge challenge;
   final List<String> challengedUsersIds;
   final List<String> challengedUsersFullNames;
+  final int fontSize;
+  final int iconSize;
 
   FriendsProgressWidget({
     @required this.challenge,
     @required this.challengedUsersIds,
     @required this.challengedUsersFullNames,
+    this.fontSize = 25,
+    this.iconSize = 25,
   });
 
   @override
@@ -47,13 +51,24 @@ class _FriendsProgressWidgetState extends State<FriendsProgressWidget> {
                   child: getFriendProgressOnChallengeIcon(
                       widget.challengedUsersIds[index]),
                 ),
-                Text(widget.challengedUsersFullNames[index]),
+                Flexible(
+                  child: AutoSizeText(
+                    widget.challengedUsersFullNames[index],
+                    style: TextStyle(
+                      fontSize: widget.fontSize.toDouble(),
+                    ),
+                    maxLines: 1,
+                  ),
+                ),
                 Visibility(
                   visible: widget.challengedUsersIds[index] ==
                       widget.challenge?.creatingUserId(),
                   child: Padding(
                     padding: const EdgeInsets.only(right: 8.0),
-                    child: Text(AppLocalizations.of(context).challengeCreator),
+                    child: Icon(
+                      Icons.create,
+                      size: widget.iconSize.toDouble(),
+                    ),
                   ),
                 ),
               ],
@@ -74,7 +89,7 @@ class _FriendsProgressWidgetState extends State<FriendsProgressWidget> {
         .any((userFinished) => userFinished == userId)) {
       return Icon(
         Icons.done_outline,
-        size: 15,
+        size: widget.iconSize.toDouble(),
         color: Colors.green,
       );
     }
@@ -82,14 +97,14 @@ class _FriendsProgressWidgetState extends State<FriendsProgressWidget> {
     if (widget.challenge.deadlinePassed()) {
       return Icon(
         Icons.error_outline,
-        size: 15,
+        size: widget.iconSize.toDouble(),
         color: Colors.red,
       );
     }
 
     return Icon(
       Icons.not_started,
-      size: 15,
+      size: widget.iconSize.toDouble(),
       color: Colors.yellow,
     );
   }

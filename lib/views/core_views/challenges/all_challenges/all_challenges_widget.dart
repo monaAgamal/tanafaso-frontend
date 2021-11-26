@@ -1,9 +1,10 @@
 import 'package:azkar/models/challenge.dart';
-import 'package:azkar/models/friendship_scores.dart';
+import 'package:azkar/models/friend.dart';
 import 'package:azkar/models/group.dart';
-import 'package:azkar/net/services/service_provider.dart';
+import 'package:azkar/services/service_provider.dart';
 import 'package:azkar/utils/app_localizations.dart';
 import 'package:azkar/utils/snapshot_utils.dart';
+import 'package:azkar/views/core_views/challenges/all_challenges/challenge_list_item_loading_widget.dart';
 import 'package:azkar/views/core_views/challenges/all_challenges/challenge_list_item_widget.dart';
 import 'package:azkar/views/keys.dart';
 import 'package:flutter/material.dart';
@@ -14,60 +15,60 @@ class AllChallengesWidget extends StatefulWidget {
 }
 
 class _AllChallengesWidgetState extends State<AllChallengesWidget> {
+  List<Challenge> challenges;
+  List<Group> groups;
+  List<Friend> friends;
+
+  Future<void> getNeededData() async {
+    await ServiceProvider.homeService.getHomeDataAndCacheIt();
+    challenges = await ServiceProvider.challengesService.getAllChallenges();
+    groups = await ServiceProvider.groupsService.getGroups();
+    friends = await ServiceProvider.usersService.getFriendsLeaderboard();
+    return Future.value();
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Container(
-      child: FutureBuilder<List<dynamic>>(
-        future: Future.wait([
-          ServiceProvider.challengesService.getAllChallenges(),
-          ServiceProvider.groupsService.getGroups(),
-          ServiceProvider.usersService.getFriendsLeaderboard(),
-        ]),
-        builder: (BuildContext context, AsyncSnapshot<List<dynamic>> snapshot) {
-          List<Widget> children;
-          if (snapshot.hasData) {
-            return getChallengesListWidget(
-                snapshot.data[0], snapshot.data[1], snapshot.data[2]);
-          } else if (snapshot.hasError) {
-            children = <Widget>[
-              Icon(
-                Icons.error_outline,
-                color: Colors.red,
-                size: 60,
+    return SafeArea(
+      child: Container(
+        child: FutureBuilder<void>(
+          future: getNeededData(),
+          builder: (BuildContext context, AsyncSnapshot<void> snapshot) {
+            List<Widget> children;
+            if (snapshot.connectionState == ConnectionState.done) {
+              return getChallengesListWidget(challenges, groups, friends);
+            } else if (snapshot.hasError) {
+              print(snapshot.error);
+              children = <Widget>[
+                Icon(
+                  Icons.error_outline,
+                  color: Colors.red,
+                  size: 60,
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(top: 16),
+                  child: SnapshotUtils.getErrorWidget(context, snapshot),
+                )
+              ];
+            } else {
+              children =
+                  List.generate(3, (_) => ChallengeListItemLoadingWidget());
+            }
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: children,
               ),
-              Padding(
-                padding: const EdgeInsets.only(top: 16),
-                child: SnapshotUtils.getErrorWidget(context, snapshot),
-              )
-            ];
-          } else {
-            children = <Widget>[
-              SizedBox(
-                child: CircularProgressIndicator(),
-                width: 60,
-                height: 60,
-              ),
-              Padding(
-                padding: EdgeInsets.only(top: 16),
-                child: Text(
-                    '${AppLocalizations.of(context).loadingTheChallenges}...'),
-              )
-            ];
-          }
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: children,
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }
 
   Widget getChallengesListWidget(List<Challenge> challenges, List<Group> groups,
-      List<FriendshipScores> friendshipScores) {
+      List<Friend> friendshipScores) {
     if (challenges == null || challenges.isEmpty) {
       return Center(
         child: Text(
@@ -79,12 +80,13 @@ class _AllChallengesWidgetState extends State<AllChallengesWidget> {
 
     return RefreshIndicator(
       onRefresh: () {
+        ServiceProvider.cacheManager.invalidateFrequentlyChangingData();
         setState(() {});
         return Future.value();
       },
       color: Colors.black,
       child: Padding(
-        padding: const EdgeInsets.all(8.0),
+        padding: const EdgeInsets.only(top: 8.0, left: 8, right: 8),
         child: ListView.separated(
           key: Keys.allChallengesWidgetListKey,
           addAutomaticKeepAlives: true,

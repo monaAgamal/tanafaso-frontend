@@ -1,18 +1,19 @@
-import 'package:azkar/models/friendship_scores.dart';
-import 'package:azkar/net/services/service_provider.dart';
+import 'package:azkar/models/friend.dart';
+import 'package:azkar/services/service_provider.dart';
 import 'package:azkar/utils/app_localizations.dart';
 import 'package:azkar/utils/features.dart';
 import 'package:azkar/views/core_views/friends/all_friends/detailed_friend_list_item_widget.dart';
 import 'package:azkar/views/core_views/friends/all_friends/summary_friend_list_item_widget.dart';
 import 'package:feature_discovery/feature_discovery.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/scheduler.dart';
 
 class FriendListItemWidget extends StatefulWidget {
-  final FriendshipScores friendshipScores;
+  final Friend friendshipScores;
+  final OnFriendDeletedCallback onFriendDeletedCallback;
 
   FriendListItemWidget({
     @required this.friendshipScores,
+    @required this.onFriendDeletedCallback,
   });
 
   @override
@@ -30,23 +31,13 @@ class _FriendListItemWidgetState extends State<FriendListItemWidget> {
     _isSabeq = false;
     _detailedView = false;
 
-    SchedulerBinding.instance.addPostFrameCallback((Duration duration) {
-      FeatureDiscovery.discoverFeatures(
-        context,
-        // Feature ids for every feature that you want to showcase in order.
-        [Features.SABEQ_INTRODUCTION],
-      );
-    });
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      Future.delayed(const Duration(milliseconds: 1500), () async {
-        if (mounted) {
-          String sabeqId = await ServiceProvider.usersService.getSabeqId();
-          setState(() {
-            _isSabeq = sabeqId == widget.friendshipScores.friend.userId;
-          });
-        }
-      });
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      String sabeqId = await ServiceProvider.usersService.getSabeqId();
+      if (mounted) {
+        setState(() {
+          _isSabeq = sabeqId == widget.friendshipScores.userId;
+        });
+      }
     });
   }
 
@@ -68,19 +59,16 @@ class _FriendListItemWidgetState extends State<FriendListItemWidget> {
                   Row(
                     children: [
                       Expanded(
-                          child: Padding(
-                        padding: EdgeInsets.all(0),
-                      )),
-                      Container(
-                        alignment: Alignment.center,
-                        width: MediaQuery.of(context).size.width / 2,
-                        child: Text(
-                          AppLocalizations.of(context)
-                              .sabeqAndDetailedViewTitle,
-                          softWrap: true,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                              fontSize: 16, fontWeight: FontWeight.bold),
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            AppLocalizations.of(context)
+                                .sabeqAndDetailedViewTitle,
+                            softWrap: true,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                                fontSize: 25, fontWeight: FontWeight.bold),
+                          ),
                         ),
                       ),
                     ],
@@ -89,38 +77,34 @@ class _FriendListItemWidgetState extends State<FriendListItemWidget> {
                   Row(
                     children: [
                       Expanded(
-                          child: Padding(
-                        padding: EdgeInsets.all(0),
-                      )),
-                      Container(
-                          alignment: Alignment.centerRight,
-                          width: MediaQuery.of(context).size.width / 2,
-                          child: RichText(
-                            text: TextSpan(
-                              // Note: Styles for TextSpans must be explicitly defined.
-                              // Child text spans will inherit styles from parent
-                              style: new TextStyle(
-                                fontSize: 14.0,
-                                color: Colors.black,
-                              ),
-                              children: <TextSpan>[
-                                new TextSpan(
-                                    text: 'سابق',
-                                    style: new TextStyle(
-                                        fontWeight: FontWeight.bold)),
-                                new TextSpan(
-                                    text:
-                                        ' هو صديق افتراضي لك على التطبيق. اضغط على سابق لتتمكن من تحديه ولرؤية المزيد من المعلومات حول صداقتكم.'),
-                              ],
+                        child: RichText(
+                          maxLines: 10,
+                          text: TextSpan(
+                            // Note: Styles for TextSpans must be explicitly defined.
+                            // Child text spans will inherit styles from parent
+                            style: new TextStyle(
+                              fontSize: 20.0,
+                              color: Colors.black,
                             ),
-                          )),
+                            children: <TextSpan>[
+                              new TextSpan(
+                                  text: 'سابق',
+                                  style: new TextStyle(
+                                      fontWeight: FontWeight.bold)),
+                              new TextSpan(
+                                  text:
+                                      ' هو صديق افتراضي لك على التطبيق. اضغط على سابق لتتمكن من تحديه ولرؤية المزيد من المعلومات حول صداقتكم.'),
+                            ],
+                          ),
+                        ),
+                      ),
                     ],
                   )
                 ],
               ),
             ),
-            backgroundColor: Theme.of(context).primaryColor,
-            targetColor: Theme.of(context).accentColor,
+            backgroundColor: Theme.of(context).colorScheme.primary,
+            targetColor: Theme.of(context).colorScheme.secondary,
             textColor: Colors.black,
             child: getMainWidget());
   }
@@ -128,15 +112,18 @@ class _FriendListItemWidgetState extends State<FriendListItemWidget> {
   Widget getMainWidget() {
     return _detailedView
         ? DetailedFriendListItemWidget(
-            friendshipScores: widget.friendshipScores,
+            friendshipScore: widget.friendshipScores,
             toggleViewCallback: () {
               setState(() {
                 _detailedView = false;
               });
             },
+            onFriendDeletedCallback: () {
+              widget.onFriendDeletedCallback.call();
+            },
           )
         : SummaryFriendListItemWidget(
-            friendshipScores: widget.friendshipScores,
+            friendshipScore: widget.friendshipScores,
             toggleViewCallback: () {
               setState(() {
                 _detailedView = true;
